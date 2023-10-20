@@ -1,0 +1,73 @@
+name: mongodb
+services:
+
+  mongo_server:
+    image: ${MONGO_IMAGE}:${MONGO_VERSION}
+    restart: always
+    environment:
+      - MONGO_CONTAINER_PORT
+      - MONGO_INITDB_ROOT_USERNAME
+      - MONGO_INITDB_ROOT_PASSWORD
+      - MONGO_INITDB_USERNAME
+      - MONGO_INITDB_PASSWORD
+      - MONGO_INITDB_DATABASE
+    expose:
+      -  ${MONGO_CONTAINER_PORT}
+    ports:
+      - target: ${MONGO_CONTAINER_PORT}
+        published: ${MONGO_HOST_PORT}
+        host_ip: ${MONGO_HOST_IP}
+        protocol: tcp
+        mode: host
+    volumes:
+      - mongo-data:/data/db
+    labels:
+      com.qlik.presales.description: "mongo server"
+      com.qlik.presales.author: "ed.ost@qlik.com"
+      com.qlik.presales.source: "https://hub.docker.com/_/mongo"
+
+  mongo_express:
+    image: ${MONGO_EXPRESS_IMAGE}:${MONGO_EXPRESS_VERSION}
+    profiles:
+      - admin
+    restart: always
+    depends_on:
+      - mongo_server
+    environment:
+      - MONGO_EXPRESS_CONTAINER_PORT
+      - ME_CONFIG_MONGODB_ADMINUSERNAME
+      - ME_CONFIG_MONGODB_ADMINPASSWORD
+      - ME_CONFIG_MONGODB_SERVER
+      - ME_CONFIG_MONGODB_URL
+    expose:
+      -  ${MONGO_EXPRESS_CONTAINER_PORT}
+    ports:
+      - target: ${MONGO_EXPRESS_CONTAINER_PORT}
+        published: ${MONGO_EXPRESS_HOST_PORT}
+        host_ip: ${MONGO_EXPRESS_HOST_IP}
+        protocol: tcp
+        mode: host
+    labels:
+      com.qlik.presales.description: "mongo express"
+      com.qlik.presales.author: "ed.ost@qlik.com"
+      com.qlik.presales.source: "https://hub.docker.com/_/mongo-express"
+
+  mongo_client:
+    image: ${MONGO_IMAGE}:${MONGO_VERSION}
+    profiles:
+      - client
+    depends_on:
+      - mongo_server
+    command:
+      - mongosh
+      - mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongo_server:${MONGO_CONTAINER_PORT}/${MONGO_INITDB_DATABASE}?authSource=${MONGO_INITDB_AUTHDB}
+    labels:
+      com.qlik.presales.description: "mongo client"
+      com.qlik.presales.author: "ed.ost@qlik.com"
+      com.qlik.presales.source: "https://hub.docker.com/_/mongo"
+  
+
+volumes:
+  mongo-data:
+    labels:
+      com.qlik.presales.description: "mongo database storage"
